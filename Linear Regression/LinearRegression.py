@@ -145,7 +145,7 @@ class LinearRegressionMultipleVariable(LinearRegressionOneVariable):
 
 
 '''
-Test for one variable linear regression
+# Test for one variable linear regression
 
 features = np.array([5, 10, 15, 25, 30, 40, 45])
 targets = np.array([15, 20, 25, 35, 40, 50, 60])
@@ -157,7 +157,7 @@ print(f"Predicted y is {lr.predict(17.5)}.")
 '''
 
 '''
-Test for multiple variables linear regression
+# Test for multiple variables linear regression
 
 features = np.array([
     [1, 2, 3],
