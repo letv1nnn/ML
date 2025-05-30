@@ -7,7 +7,6 @@ from keras.models import Sequential
 from keras.layers import Flatten, Dense
 
 
-#'''
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
 # feature scaling using normalization
@@ -34,7 +33,6 @@ print("Accuracy:", accuracy)
 print("Loss:", loss)
 
 model.save("digits.keras")
-#'''
 
 for i in range(5):
     img = x_test[i].reshape(1, 28, 28)
