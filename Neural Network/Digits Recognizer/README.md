@@ -9,3 +9,5 @@ I've used 2 hidden (relu) and 1 output (softmax) layers.
 
 ![image](https://github.com/user-attachments/assets/8acb88b8-849e-4413-bd6b-1e9fbe67a12f)
 
+
+code: https://github.com/letv1nnn/ML/blob/main/Neural%20Network/Digits%20Recognizer/main.py
