@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import tensorflow as tf
 import cv2 as cv
 from keras.datasets import mnist
 import keras
@@ -37,6 +36,17 @@ print("Loss:", loss)
 model.save("digits.keras")
 #'''
 
+for i in range(5):
+    img = x_test[i].reshape(1, 28, 28)
+    prediction = model.predict(img)
+    print(f"True label: {y_test[i]}")
+    print(f"Predicted: {np.argmax(prediction)}")
+
+    plt.imshow(x_test[i], cmap='gray')
+    plt.title(f"Label: {y_test[i]}, Prediction: {np.argmax(prediction)}")
+    plt.show()
+
+'''
 for i in range(1, 6):
     img = cv.imread(f"{i}.png")[:, :, 0]
     img = np.invert(np.array([img]))
@@ -44,3 +54,4 @@ for i in range(1, 6):
     print(f"The result is probably: {np.argmax(prediction)}")
     plt.imshow(img[0], cmap=plt.cm.binary)
     plt.show()
+'''
