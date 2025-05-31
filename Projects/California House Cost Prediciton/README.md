@@ -1,4 +1,5 @@
 # California House Cost prediction
+(Not Finished)
 
 This is the end-to-end project from **"Hands-On Machine Learning with Sckit-Learn, Keras & Tensorflow"** book from the second chapter.
 
