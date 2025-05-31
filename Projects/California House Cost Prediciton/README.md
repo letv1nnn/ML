@@ -8,5 +8,4 @@ I took the dataset from the authors github repository
 
 ![image](https://github.com/user-attachments/assets/ae285a87-9a0e-4fac-b423-8af5c346a075)
 
-File: https://github.com/ageron/data/raw/main/housing.tgz
 
