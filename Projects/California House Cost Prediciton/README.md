@@ -1,7 +1,8 @@
 # California House Cost prediction
 (Not Finished)
 
-This is a California house cost prediction project.
+This is a California house cost prediction project. 
+Dataset that I've used is in the housing.csv file.
 
 ## Data explorations
 
