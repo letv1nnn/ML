@@ -1,7 +1,7 @@
 # California House Cost prediction
 (Not Finished)
 
-This is a California house cost prediction project. 
+This is a California house cost prediction project. This project is mostly for educational purposes, it explores so many consepts from ML and how to implement them using scikit-learn. 
 Dataset that I've used is in the housing.csv file.
 
 ## Data explorations
