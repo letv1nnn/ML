@@ -1,8 +1,7 @@
 # California House Cost prediction
-(Not Finished)
 
 This is a California house cost prediction project. This project is mostly for educational purposes, where I explored many consepts from ML and how to implement them using scikit-learn. 
-Dataset that I've used is in the [housing.csv](https://github.com/letv1nnn/ML/edit/main/Projects/California%20House%20Cost%20Prediciton/housing.csv) file.
+Dataset that I've used is in the [housing.csv](https://github.com/letv1nnn/ML/edit/main/Projects/California%20House%20Cost%20Prediciton/housing.csv) file. I went through all crucial steps: Loading data, Experiment with atribute combinations, Feature Engineering, Selecting and training a model, Fine-tuning the model and loading the final model.
 
 ## Data explorations
 
