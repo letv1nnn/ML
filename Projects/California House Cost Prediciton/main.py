@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas.plotting import scatter_matrix
 import numpy as np
+from scipy import stats
 from scipy.stats import randint
 
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ import seaborn as sns
 from pathlib import Path
 import tarfile
 import urllib.request
+import joblib
 
 import sklearn as sl
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
@@ -362,12 +364,21 @@ X_test["people_per_house"] = X_test["population"] / X_test["households"]
 final_predictions = final_model.predict(X_test)
 
 final_rmse = np.sqrt(mean_squared_error(y_test, final_predictions))
-print(final_rmse)
+# print(final_rmse)
 
+# For most cases RMSE is enough, but if the model surpass by 0.1 or even less then the previous one.
+confidence = 0.95
+squared_errors = (final_predictions - y_test) ** 2
+print(np.sqrt(stats.t.interval(confidence, len(squared_errors) - 1,
+                               loc=squared_errors.mean(),
+                               scale=stats.sem(squared_errors))))
 
 #---------------------------------------------------------------------------------------------------------------------
 
-# LAUNCH, MONITOR, AND MAINTAIN YOUR SYSTEM
+# LAUNCH, MONITOR, AND MAINTAIN THE SYSTEM
 
 #---------------------------------------------------------------------------------------------------------------------
 
+
+# saving the model
+joblib.dump(final_model, "california_housing_model.pkl")
