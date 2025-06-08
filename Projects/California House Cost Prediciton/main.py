@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas.plotting import scatter_matrix
 import numpy as np
+from scipy.stats import randint
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -9,18 +10,23 @@ from pathlib import Path
 import tarfile
 import urllib.request
 
-from sklearn.model_selection import train_test_split
+import sklearn as sl
+from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import (OrdinalEncoder, OneHotEncoder,
                                    MinMaxScaler, StandardScaler,
                                    FunctionTransformer)
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.linear_model import LinearRegression
-from sklearn.compose import TransformedTargetRegressor
+from sklearn.compose import TransformedTargetRegressor, ColumnTransformer, make_column_selector
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_array, check_is_fitted
 from sklearn.cluster import KMeans
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.metrics import mean_squared_error
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import cross_val_score
+from sklearn.ensemble import RandomForestRegressor
 
 
 # ---------------------------------------------------------------------------------------------------------------------|
@@ -229,6 +235,7 @@ cluster_simil = ClusterSimilarity(n_clusters=10, gamma=1., random_state=42)
 similarities = cluster_simil.fit_transform(housing[["latitude", "longitude"]], sample_weight=housing_labels)
 
 
+# ML PIPELINE
 # Many data transformation steps that need to be executed in the right order.
 # Pipeline class helps with such sequences of transformation.
 # Here is a small pipeline for numerical attributes, which will first impute then scale the input features
@@ -239,11 +246,128 @@ num_pipeline = Pipeline([
 # Alternatively, it's possible to use make_pipeline function instead
 
 housing_num_prepared = num_pipeline.fit_transform(housing_num)
+df_housing_num_prepared = pd.DataFrame(housing_num_prepared, columns=num_pipeline.get_feature_names_out(), index=housing_num.index)
 
+# A single transformer that handle both numerical and categorical columns
+num_attribs = ["longitude", "latitude", "housing_median_age", "total_rooms",
+               "total_bedrooms", "population", "households", "median_income"]
+cat_attribs = ["ocean_proximity"]
+
+cat_pipeline = make_pipeline(
+    SimpleImputer(strategy="most_frequent"),
+    OneHotEncoder(handle_unknown="ignore")
+)
+
+preprocessing = ColumnTransformer([
+    ("num", num_pipeline, num_attribs),
+    ("cat", cat_pipeline, cat_attribs)
+])
+
+def column_ratio(X):
+    return X[:, [0]] / X[:, [1]]
+
+def ratio_name(function_transformer, feature_names_in):
+    return ["ratio"]  # feature names out
+
+def ratio_pipeline():
+    return make_pipeline(
+        SimpleImputer(strategy="median"),
+        FunctionTransformer(column_ratio, feature_names_out=ratio_name),
+        StandardScaler())
+
+log_pipeline = make_pipeline(
+    SimpleImputer(strategy="median"),
+    FunctionTransformer(np.log, feature_names_out="one-to-one"),
+    StandardScaler())
+cluster_simil = ClusterSimilarity(n_clusters=10, gamma=1., random_state=42)
+default_num_pipeline = make_pipeline(SimpleImputer(strategy="median"),
+                                     StandardScaler())
+preprocessing = ColumnTransformer([
+        ("bedrooms", ratio_pipeline(), ["total_bedrooms", "total_rooms"]),
+        ("rooms_per_house", ratio_pipeline(), ["total_rooms", "households"]),
+        ("people_per_house", ratio_pipeline(), ["population", "households"]),
+        ("log", log_pipeline, ["total_bedrooms", "total_rooms", "population",
+                               "households", "median_income"]),
+        ("geo", cluster_simil, ["latitude", "longitude"]),
+        ("cat", cat_pipeline, make_column_selector(dtype_include=object)),
+    ],
+    remainder=default_num_pipeline)
+
+housing_prepared = preprocessing.fit_transform(housing)
+# print(preprocessing.get_feature_names_out())
 
 # ---------------------------------------------------------------------------------------------------------------------|
 
 # SELECT AND TRAIN A MODEL
 
 # ---------------------------------------------------------------------------------------------------------------------|
+'''
+forest_reg = make_pipeline(preprocessing, RandomForestRegressor(n_estimators=10, random_state=42, n_jobs=-1))
+forest_reg.fit(housing, housing_labels)
+forest_rmses = -cross_val_score(forest_reg, housing, housing_labels,
+                              scoring="neg_root_mean_squared_error", cv=10, n_jobs=-1)
+
+print(pd.Series(forest_rmses).describe())
+'''
+#---------------------------------------------------------------------------------------------------------------------
+
+# FINE-TUNE THIS MODEL
+
+#---------------------------------------------------------------------------------------------------------------------
+
+
+full_pipeline = Pipeline([
+    ("preprocessing", preprocessing),
+    ("random_forest", RandomForestRegressor(n_estimators=10, random_state=42))
+])
+param_grid = [
+    {'preprocessing__geo__n_clusters': [5, 8, 10],
+     'random_forest__max_features': [4, 6, 8]},
+    {'preprocessing__geo__n_clusters': [10, 15],
+     'random_forest__max_features': [6, 8, 10]},
+]
+
+grid_search = GridSearchCV(full_pipeline, param_grid, cv=3,
+                           scoring='neg_root_mean_squared_error')
+grid_search.fit(housing, housing_labels)
+# print(grid_search.best_params_)
+
+cv_res = pd.DataFrame(grid_search.cv_results_)
+cv_res.sort_values(by="mean_test_score", ascending=False, inplace=True)
+
+# Second method, using RandomizedSearchCV that is more preferable
+param_distribs = {'preprocessing__geo__n_clusters': randint(low=3, high=50),
+                  'random_forest__max_features': randint(low=2, high=20)}
+
+rnd_search = RandomizedSearchCV(
+    full_pipeline, param_distributions=param_distribs, n_iter=10, cv=3,
+    scoring='neg_root_mean_squared_error', random_state=42)
+
+rnd_search.fit(housing, housing_labels)
+
+final_model = rnd_search.best_estimator_
+feature_importances = final_model["random_forest"].feature_importances_
+# print(feature_importances.round(2))
+
+#print(sorted(zip(feature_importances, final_model["preprocessing"].get_feature_names_out()), reverse=True))
+
+# Testing the model on a test set
+X_test = strat_test_set.drop("median_house_value", axis=1)
+y_test = strat_test_set["median_house_value"].copy()
+
+X_test["rooms_per_house"] = X_test["total_rooms"] / X_test["households"]
+X_test["bedrooms_ratio"] = X_test["total_bedrooms"] / X_test["total_rooms"]
+X_test["people_per_house"] = X_test["population"] / X_test["households"]
+
+final_predictions = final_model.predict(X_test)
+
+final_rmse = np.sqrt(mean_squared_error(y_test, final_predictions))
+print(final_rmse)
+
+
+#---------------------------------------------------------------------------------------------------------------------
+
+# LAUNCH, MONITOR, AND MAINTAIN YOUR SYSTEM
+
+#---------------------------------------------------------------------------------------------------------------------
 
